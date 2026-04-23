@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Analysis Result</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <h2>🤖 AI Resume Screening System</h2>
+</header>
+
+<div class="container">
+
+  <div class="card large">
+
+    <h1>📊 Resume Analysis Result</h1>
+
+    <!-- SEARCH -->
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="🔍 Search resume..."
+      class="search"
+    />
+
+    <!-- CONTROLS -->
+    <div class="controls">
+      <button id="sortScore">📈 Sort by Score</button>
+      <button id="sortName">🔤 Sort by Name</button>
+      <button id="showSelected">✅ Show Selected</button>
+      <button id="resetFilter">📋 Show All</button>
+      <button id="downloadCSV">⬇️ Download CSV</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="dashboard">
+      <div>
+        <h3>Total</h3>
+        <p id="totalResumes">0</p>
+      </div>
+
+      <div>
+        <h3>Selected</h3>
+        <p id="selectedCount">0</p>
+      </div>
+
+      <div>
+        <h3>Average</h3>
+        <p id="averageScore">0%</p>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loading">Analyzing resumes...</div>
+
+    <!-- RESULT LIST -->
+    <div id="list" class="list"></div>
+
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+
+<script>
+/* Attach events properly (no inline JS) */
+document.getElementById("searchInput").addEventListener("input", (e)=>{
+  searchResume(e.target.value)
+})
+
+document.getElementById("sortScore").onclick = sortByScore
+document.getElementById("sortName").onclick = sortByName
+document.getElementById("showSelected").onclick = showSelected
+document.getElementById("resetFilter").onclick = resetFilter
+document.getElementById("downloadCSV").onclick = downloadCSV
+</script>
+
+</body>
+</html>
