@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Resume Analyzer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <h2>🤖 AI Resume Screening System</h2>
+</header>
+
+<div class="container">
+
+  <div class="card">
+
+    <h1>Upload Resumes</h1>
+    <p class="subtitle">Upload candidate resumes and match them with job requirements</p>
+
+    <!-- DROPZONE -->
+    <div class="dropzone" id="dropzone">
+      ☁️ Drag & Drop Resumes Here or Click to Upload
+      <input type="file" id="fileInput" multiple accept=".txt,.pdf,.doc,.docx">
+    </div>
+
+    <!-- FILE TAGS -->
+    <div id="fileTags" class="tags"></div>
+
+    <textarea id="jobDesc" placeholder="Enter job keywords (JavaScript, Python, SQL...)"></textarea>
+
+    <button id="analyzeBtn">⚡ Analyze Resumes</button>
+
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
