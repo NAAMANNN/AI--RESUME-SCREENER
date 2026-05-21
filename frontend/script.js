@@ -7,27 +7,27 @@ const analyzeBtn = document.getElementById("analyzeBtn")
 
 let filesArray = []
 
-// ✅ RUN ONLY ON INDEX PAGE
 if (dropzone && fileInput) {
 
-  // CLICK → open file
-  dropzone.addEventListener("click", () => fileInput.click())
+  // FIX 1: Prevent click bubbling loops
+  dropzone.addEventListener("click", (e) => {
+    if (e.target !== fileInput) {
+      fileInput.click()
+    }
+  })
 
-  // ✅ FIXED FILE SELECT (NO REPLACE, ONLY ADD)
+  // FIX 2: Clear input value cache so it updates instantly on the 1st try
   fileInput.addEventListener("change", () => {
-
     const newFiles = Array.from(fileInput.files)
-
     newFiles.forEach(file => {
       if (!filesArray.some(f => f.name === file.name)) {
         filesArray.push(file)
       }
     })
-
     renderTags()
+    fileInput.value = "" // Clears the selection cache
   })
 
-  // DRAG & DROP
   dropzone.addEventListener("dragover", (e) => {
     e.preventDefault()
     dropzone.style.background = "rgba(59,130,246,0.2)"
@@ -37,43 +37,73 @@ if (dropzone && fileInput) {
     dropzone.style.background = "transparent"
   })
 
-  // ✅ FIXED DROP (NO REPLACE)
   dropzone.addEventListener("drop", (e) => {
     e.preventDefault()
-
+    dropzone.style.background = "transparent"
     const newFiles = Array.from(e.dataTransfer.files)
-
     newFiles.forEach(file => {
       if (!filesArray.some(f => f.name === file.name)) {
         filesArray.push(file)
       }
     })
-
     renderTags()
   })
 
-  // ANALYZE BUTTON
-  analyzeBtn.addEventListener("click", () => {
+  analyzeBtn.addEventListener("click", async () => {
+    const jobDesc = document.getElementById("jobDesc").value;
 
     if (filesArray.length === 0) {
-      alert("Upload resumes first")
-      return
+      alert("Please upload resumes first.");
+      return;
+    }
+    if (!jobDesc.trim()) {
+      alert("Please enter a job description or keywords.");
+      return;
     }
 
-    // loading
-    document.body.innerHTML += "<p style='text-align:center'>Analyzing resumes...</p>"
+    // Temporary non-breaking loading element
+    const loadingMsg = document.createElement("p");
+    loadingMsg.id = "apiLoadingMsg";
+    loadingMsg.style = 'text-align:center; position:fixed; top:50%; width:100%; color:white; z-index:999; background:rgba(0,0,0,0.8); padding:20px;';
+    loadingMsg.innerText = "Calling AI Engine... Please wait";
+    document.body.appendChild(loadingMsg);
 
-    setTimeout(() => {
+    const results = [];
 
-      const resumeData = filesArray.map(f => ({
-        name: f.name
-      }))
+    for (let i = 0; i < filesArray.length; i++) {
+      const file = filesArray[i];
+      const formData = new FormData();
+      formData.append("resume_file", file);
+      formData.append("job_description", jobDesc);
 
-      localStorage.setItem("resumes", JSON.stringify(resumeData))
+      try {
+        const response = await fetch("http://localhost:8000/api/screen-resume/", {
+          method: "POST",
+          body: formData
+        });
 
-      window.location.href = "result.html"
+        if (!response.ok) {
+           console.error(`Failed to process ${file.name}`);
+           continue;
+        }
 
-    }, 1000)
+        const data = await response.json();
+        
+        results.push({
+          name: data.filename,
+          score: Math.round(data.match_score_percentage) 
+        });
+
+      } catch (error) {
+        console.error("Error connecting to API:", error);
+      }
+    }
+
+    const oldMsg = document.getElementById("apiLoadingMsg");
+    if(oldMsg) oldMsg.remove();
+
+    localStorage.setItem("resumes", JSON.stringify(results));
+    window.location.href = "result.html";
 
   })
 
@@ -83,19 +113,15 @@ if (dropzone && fileInput) {
 
 function renderTags() {
   if (!fileTags) return
-
   fileTags.innerHTML = ""
-
   filesArray.forEach((file, index) => {
     const tag = document.createElement("div")
     tag.className = "tag"
     tag.innerText = file.name
-
     tag.onclick = () => {
       filesArray.splice(index, 1)
       renderTags()
     }
-
     fileTags.appendChild(tag)
   })
 }
@@ -105,50 +131,29 @@ function renderTags() {
 let resumesGlobal = []
 
 document.addEventListener("DOMContentLoaded", () => {
-
   const list = document.getElementById("list")
   const loading = document.getElementById("loading")
 
-  // ✅ RUN ONLY ON RESULT PAGE
   if (!list) return
 
   const data = JSON.parse(localStorage.getItem("resumes")) || []
 
   if (data.length === 0) {
-    if (loading) loading.innerText = "No resumes found"
+    if (loading) loading.innerText = "No resumes found. Please go back and upload some!"
     return
   }
 
-  // 🔥 SMART SCORING (NO KEYWORDS)
-  resumesGlobal = data.map(r => {
-
-    let score = 30
-
-    if (r.name.length > 10) score += 20
-    if (r.name.length > 15) score += 10
-
-    score += Math.floor(Math.random() * 40)
-
-    return {
-      name: r.name,
-      score: Math.min(score, 100)
-    }
-
-  })
-
-  render(resumesGlobal)
-
+  resumesGlobal = data;
+  render(resumesGlobal);
 })
 
 // ================= RENDER =================
 
 function render(data) {
-
   const list = document.getElementById("list")
   const loading = document.getElementById("loading")
 
   if (loading) loading.style.display = "none"
-
   if (!list) return
 
   if (data.length === 0) {
@@ -167,7 +172,6 @@ function render(data) {
   let html = ""
 
   data.forEach((r, i) => {
-
     html += `
     <div class="resume-card">
       ${i === 0 ? `<div class="top-badge">🏆 Top</div>` : ""}
@@ -185,7 +189,6 @@ function render(data) {
   })
 
   list.innerHTML = html
-
 }
 
 // ================= EXTRA FEATURES =================
@@ -214,18 +217,14 @@ function resetFilter() {
 }
 
 function downloadCSV() {
-
   let csv = "Rank,Name,Score,Status\n"
-
   resumesGlobal
   .sort((a, b) => b.score - a.score)
   .forEach((r, i) => {
     csv += `${i+1},${r.name},${r.score},${r.score>=80?"Selected":"Rejected"}\n`
   })
-
   const blob = new Blob([csv], {type:"text/csv"})
   const url = URL.createObjectURL(blob)
-
   const a = document.createElement("a")
   a.href = url
   a.download = "resume_results.csv"
